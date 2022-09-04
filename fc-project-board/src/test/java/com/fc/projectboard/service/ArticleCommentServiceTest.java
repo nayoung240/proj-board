@@ -2,9 +2,12 @@ package com.fc.projectboard.service;
 
 import com.fc.projectboard.domain.Article;
 import com.fc.projectboard.domain.ArticleComment;
+import com.fc.projectboard.domain.UserAccount;
 import com.fc.projectboard.dto.ArticleCommentDto;
+import com.fc.projectboard.dto.UserAccountDto;
 import com.fc.projectboard.repository.ArticleCommentRepository;
 import com.fc.projectboard.repository.ArticleRepository;
+import com.fc.projectboard.repository.UserAccountRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,18 +31,20 @@ class ArticleCommentServiceTest {
 
     @Mock private ArticleRepository articleRepository;
     @Mock private ArticleCommentRepository articleCommentRepository;
+    @Mock private UserAccountRepository userAccountRepository;
 
     @DisplayName("게시글 Id로 조회하면 해당하는 댓글 리스트 반환하기")
     @Test
-    void givenArticleId_whenSearchingComments_thenReturnsComments() {
+    void givenArticleId_whenSearchingAtricleComments_thenReturnsArticleComments() {
         // Given
         Long articleId = 1L;
-        given(articleRepository.findById(articleId)).willReturn(Optional.of(Article.of("title", "content", "#java")));
+        ArticleComment expected = createArticleComment("content");
+        given(articleCommentRepository.findByArticle_Id(articleId)).willReturn(List.of(expected));
         // When
-        List<ArticleComment> articleComments = sut.searchArticleComment(articleId);
+        List<ArticleCommentDto> actual = sut.searchArticleComments(articleId);
         // Then
-        assertThat(articleComments).isNotNull();
-        then(articleRepository).should().findById(articleId);
+        assertThat(actual).hasSize(1).first().hasFieldOrPropertyWithValue("content", expected.getContent());
+        then(articleCommentRepository).should().findByArticle_Id(articleId);
     }
 
     @DisplayName("댓글 정보를 입력하면, 댓글을 저장한다.")
@@ -56,7 +61,6 @@ class ArticleCommentServiceTest {
 
         // Then
         then(articleRepository).should().getReferenceById(dto.articleId());
-        then(userAccountRepository).should().getReferenceById(dto.userAccountDto().userId());
         then(articleCommentRepository).should().save(any(ArticleComment.class));
     }
 
@@ -72,7 +76,6 @@ class ArticleCommentServiceTest {
 
         // Then
         then(articleRepository).should().getReferenceById(dto.articleId());
-        then(userAccountRepository).shouldHaveNoInteractions();
         then(articleCommentRepository).shouldHaveNoInteractions();
     }
 
@@ -130,12 +133,12 @@ class ArticleCommentServiceTest {
                 1L,
                 1L,
                 createUserAccountDto(),
-                content,
                 LocalDateTime.now(),
                 "uno",
                 LocalDateTime.now(),
-                "uno"
-        );
+                "uno",
+                content
+                );
     }
 
     private UserAccountDto createUserAccountDto() {
